@@ -24,25 +24,29 @@ resource "aws_db_subnet_group" "udacity_db_subnet_group" {
 
 resource "aws_rds_cluster" "udacity_cluster-s" {
   cluster_identifier              = "udacity-db-cluster-s"
-  availability_zones              = ["us-west-1b"]
+  availability_zones              = ["us-west-1a", "us-west-1c"]
   db_cluster_parameter_group_name = aws_rds_cluster_parameter_group.cluster_pg-s.name
   vpc_security_group_ids          = [aws_security_group.db_sg_2.id]
   db_subnet_group_name            = aws_db_subnet_group.udacity_db_subnet_group.name
   engine_mode                     = "provisioned"
+  engine                          = "aurora-mysql"
   engine_version                  = "5.7.mysql_aurora.2.11.2"
+  backup_retention_period         = 5
   skip_final_snapshot             = true
   storage_encrypted               = false
+  replication_source_identifier   = var.primary_db_cluster_arn
+  source_region                   = "us-east-2"
   depends_on                      = [aws_rds_cluster_parameter_group.cluster_pg-s]
-  engine                          = "aurora-mysql"
 }
 
 resource "aws_rds_cluster_instance" "udacity_instance-s" {
-  count                = 1
+  engine               = "aurora-mysql"
+  count                = 2
   identifier           = "udacity-db-instance-${count.index}-s"
   cluster_identifier   = aws_rds_cluster.udacity_cluster-s.id
   instance_class       = "db.t2.small"
   db_subnet_group_name = aws_db_subnet_group.udacity_db_subnet_group.name
-  engine               = "aurora-mysql"
+  depends_on           = [aws_rds_cluster_parameter_group.cluster_pg-s]
 }
 
 resource "aws_security_group" "db_sg_2" {
